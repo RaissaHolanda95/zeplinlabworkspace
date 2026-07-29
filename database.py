@@ -1,10 +1,13 @@
 """Configuração do banco de dados SQLite e sessão SQLAlchemy."""
 
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
-DATABASE_URL = "sqlite:///./relatorios.db"
+# O filesystem da Vercel é somente leitura; /tmp é gravável durante a execução.
+DATABASE_URL = "sqlite:////tmp/relatorios.db" if os.getenv("VERCEL") else "sqlite:///./relatorios.db"
 
 # O SQLite requer esta opção quando a aplicação atende requisições em mais de uma thread.
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

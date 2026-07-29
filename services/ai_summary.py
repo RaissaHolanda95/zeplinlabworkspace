@@ -7,6 +7,21 @@ from typing import Any, Optional
 from openai import OpenAI
 
 
+def _fallback_summary(metrics_summary: dict[str, Any], client_name: str, campaign_name: Optional[str] = None) -> str:
+    """Resumo local usado quando a chave OpenAI não está disponível no ambiente."""
+    spend = float(metrics_summary.get("spend", 0) or 0)
+    results = float(metrics_summary.get("conversions", 0) or 0)
+    cost = float(metrics_summary.get("cost_per_result", metrics_summary.get("cpa", 0)) or 0)
+    ctr = float(metrics_summary.get("ctr", 0) or 0)
+    scope = f"na campanha {campaign_name}" if campaign_name else "na visão geral da conta"
+    return (
+        f"No período analisado, {client_name} registrou {results:,.0f} resultados {scope}, com investimento de R$ {spend:,.2f}. "
+        f"O custo por resultado foi de R$ {cost:,.2f} e o CTR ficou em {ctr:,.2f}%.\n\n"
+        "O próximo diagnóstico deve priorizar a comparação entre campanhas, criativos e públicos para identificar os elementos que sustentam o volume de resultados e os pontos de menor eficiência.\n\n"
+        "A ação recomendada é manter o acompanhamento periódico do custo por resultado e do alcance, redistribuindo investimento de forma gradual para os segmentos com melhor desempenho."
+    )
+
+
 def generate_executive_summary(
     metrics_summary: dict[str, Any],
     client_name: str,
@@ -18,8 +33,8 @@ def generate_executive_summary(
     A chave é obtida da variável de ambiente ``OPENAI_API_KEY``. O modelo pode ser
     alterado por ``OPENAI_MODEL`` sem necessidade de mudar o código.
     """
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY não está configurada.")
+    if not os.getenv("OPENAI_API_KEY", "").strip():
+        return _fallback_summary(metrics_summary, client_name, campaign_name)
 
     campaign_context = (
         f"A análise deve ser exclusivamente da campanha selecionada: {campaign_name}. "
