@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from dotenv import dotenv_values, load_dotenv
 from sqlalchemy import func, inspect, select, text
@@ -42,6 +42,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/", include_in_schema=False)
+def redirect_root_to_docs() -> RedirectResponse:
+    """Direciona a raiz da implantação para a documentação interativa."""
+    return RedirectResponse(url="/docs")
 
 
 @app.on_event("startup")
