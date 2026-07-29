@@ -117,7 +117,7 @@ def _load_environment() -> None:
     """Carrega e normaliza as credenciais, inclusive em .env com formatação incomum."""
     load_dotenv(dotenv_path=ENV_FILE.resolve(), override=True)
     parsed_values = dotenv_values(ENV_FILE.resolve())
-    for key in ("META_APP_ID", "META_APP_SECRET", "META_ACCESS_TOKEN"):
+    for key in ("META_APP_ID", "META_APP_SECRET", "META_ACCESS_TOKEN", "META_AD_ACCOUNT_ID", "META_CLIENT_NAME"):
         value = os.getenv(key) or parsed_values.get(key) or _read_env_value(key)
         if value:
             os.environ[key] = value.strip().strip('"').strip("'")
@@ -142,6 +142,45 @@ def _read_env_value(key: str) -> Optional[str]:
     except OSError:
         return None
     return None
+
+
+def _optional_env_value(key: str) -> Optional[str]:
+    """Lê uma configuração opcional da Vercel ou do arquivo .env."""
+    value = os.getenv(key) or dotenv_values(ENV_FILE.resolve()).get(key) or _read_env_value(key)
+    if not value:
+        return None
+    normalized = value.strip().strip('"').strip("'")
+    if normalized:
+        os.environ[key] = normalized
+        return normalized
+    return None
+
+
+def _bootstrap_configured_client(db: Session) -> Optional[Client]:
+    """Cria a conta configurada por ambiente quando o SQLite temporário está vazio."""
+    account_id = _optional_env_value("META_AD_ACCOUNT_ID")
+    access_token = _env_meta_token()
+    if not account_id or not access_token:
+        return None
+
+    normalized_account_id = account_id if account_id.startswith("act_") else f"act_{account_id}"
+    client = db.scalar(
+        select(Client).where(Client.meta_account_id.in_([account_id, normalized_account_id]))
+    )
+    if not client:
+        client = Client(
+            name=_optional_env_value("META_CLIENT_NAME") or f"Conta Meta {normalized_account_id}",
+            meta_account_id=normalized_account_id,
+            meta_access_token=access_token,
+            status="active",
+        )
+        db.add(client)
+    elif client.meta_access_token != access_token:
+        client.meta_access_token = access_token
+
+    db.commit()
+    db.refresh(client)
+    return client
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -185,6 +224,10 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)) -> Clien
 
 @app.get("/api/v1/clients", response_model=list[ClientResponse])
 def list_clients(db: Session = Depends(get_db)) -> list[Client]:
+    # Em ambientes serverless, /tmp pode ser recriado entre invocações. A conta
+    # configurada na Vercel é recriada automaticamente antes de preencher o seletor.
+    if not db.scalar(select(Client.id).limit(1)):
+        _bootstrap_configured_client(db)
     return list(db.scalars(select(Client).order_by(Client.created_at.desc())).all())
 
 
