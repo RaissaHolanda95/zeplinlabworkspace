@@ -65,6 +65,19 @@ class MetaAdsService:
         except requests.RequestException as exc:
             raise MetaAdsAPIError("Não foi possível conectar à Meta Graph API.") from exc
 
+    def list_ad_accounts(self, access_token: str) -> list[dict[str, Any]]:
+        """Lista todas as contas de anúncios visíveis para o token atual."""
+        if not access_token or access_token == "MOCK_TOKEN":
+            raise MetaAdsAPIError("META_ACCESS_TOKEN não está configurado.")
+        return list(self._paginate(
+            f"{self.BASE_URL}/{self.API_VERSION}/me/adaccounts",
+            {
+                "access_token": access_token,
+                "fields": "id,name,account_id,account_status,disable_reason,currency",
+                "limit": 500,
+            },
+        ))
+
     def fetch_account_insights(
         self,
         account_id: str,

@@ -117,7 +117,7 @@ def _load_environment() -> None:
     """Carrega e normaliza as credenciais, inclusive em .env com formatação incomum."""
     load_dotenv(dotenv_path=ENV_FILE.resolve(), override=True)
     parsed_values = dotenv_values(ENV_FILE.resolve())
-    for key in ("META_APP_ID", "META_APP_SECRET", "META_ACCESS_TOKEN", "META_AD_ACCOUNT_ID", "META_CLIENT_NAME"):
+    for key in ("META_APP_ID", "META_APP_SECRET", "META_ACCESS_TOKEN"):
         value = os.getenv(key) or parsed_values.get(key) or _read_env_value(key)
         if value:
             os.environ[key] = value.strip().strip('"').strip("'")
@@ -144,43 +144,44 @@ def _read_env_value(key: str) -> Optional[str]:
     return None
 
 
-def _optional_env_value(key: str) -> Optional[str]:
-    """Lê uma configuração opcional da Vercel ou do arquivo .env."""
-    value = os.getenv(key) or dotenv_values(ENV_FILE.resolve()).get(key) or _read_env_value(key)
-    if not value:
-        return None
-    normalized = value.strip().strip('"').strip("'")
-    if normalized:
-        os.environ[key] = normalized
-        return normalized
-    return None
-
-
-def _bootstrap_configured_client(db: Session) -> Optional[Client]:
-    """Cria a conta configurada por ambiente quando o SQLite temporário está vazio."""
-    account_id = _optional_env_value("META_AD_ACCOUNT_ID")
+def _fetch_meta_ad_accounts() -> tuple[str, list[dict[str, object]]]:
+    """Busca as contas disponíveis para o token global, sem depender de uma conta fixa."""
+    _load_environment()
     access_token = _env_meta_token()
-    if not account_id or not access_token:
-        return None
+    if not access_token:
+        raise HTTPException(status_code=503, detail="META_ACCESS_TOKEN não está configurado nas variáveis de ambiente.")
+    try:
+        return access_token, MetaAdsService().list_ad_accounts(access_token)
+    except MetaAdsAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    normalized_account_id = account_id if account_id.startswith("act_") else f"act_{account_id}"
-    client = db.scalar(
-        select(Client).where(Client.meta_account_id.in_([account_id, normalized_account_id]))
-    )
-    if not client:
-        client = Client(
-            name=_optional_env_value("META_CLIENT_NAME") or f"Conta Meta {normalized_account_id}",
-            meta_account_id=normalized_account_id,
-            meta_access_token=access_token,
-            status="active",
+
+def _upsert_accessible_clients(db: Session, access_token: str, accounts: list[dict[str, object]]) -> None:
+    """Mantém o cadastro local alinhado com todas as contas acessíveis na Meta."""
+    for account in accounts:
+        raw_account_id = str(account.get("id") or account.get("account_id") or "").strip()
+        if not raw_account_id:
+            continue
+        meta_account_id = raw_account_id if raw_account_id.startswith("act_") else f"act_{raw_account_id}"
+        client = db.scalar(
+            select(Client).where(Client.meta_account_id.in_([raw_account_id, meta_account_id]))
         )
-        db.add(client)
-    elif client.meta_access_token != access_token:
-        client.meta_access_token = access_token
-
+        account_name = str(account.get("name") or meta_account_id).strip()
+        account_status = str(account.get("account_status") or "active")
+        if not client:
+            client = Client(
+                name=account_name,
+                meta_account_id=meta_account_id,
+                meta_access_token=access_token,
+                status=account_status,
+            )
+            db.add(client)
+        else:
+            client.name = account_name
+            client.meta_account_id = meta_account_id
+            client.meta_access_token = access_token
+            client.status = account_status
     db.commit()
-    db.refresh(client)
-    return client
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -224,11 +225,17 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)) -> Clien
 
 @app.get("/api/v1/clients", response_model=list[ClientResponse])
 def list_clients(db: Session = Depends(get_db)) -> list[Client]:
-    # Em ambientes serverless, /tmp pode ser recriado entre invocações. A conta
-    # configurada na Vercel é recriada automaticamente antes de preencher o seletor.
-    if not db.scalar(select(Client.id).limit(1)):
-        _bootstrap_configured_client(db)
+    # A descoberta ocorre a cada carregamento para incluir contas Meta novas.
+    access_token, accounts = _fetch_meta_ad_accounts()
+    _upsert_accessible_clients(db, access_token, accounts)
     return list(db.scalars(select(Client).order_by(Client.created_at.desc())).all())
+
+
+@app.get("/api/v1/meta/adaccounts")
+def list_meta_ad_accounts() -> list[dict[str, object]]:
+    """Expõe as contas da Meta para integrações e diagnóstico do ambiente."""
+    _, accounts = _fetch_meta_ad_accounts()
+    return accounts
 
 
 @app.get("/api/v1/clients/{client_id}/campaigns")
