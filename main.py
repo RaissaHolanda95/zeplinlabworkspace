@@ -13,7 +13,8 @@ from uuid import uuid4
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from dotenv import dotenv_values, load_dotenv
 from sqlalchemy import func, inspect, select, text
@@ -32,6 +33,8 @@ ENV_FILE = ROOT_DIR / ".env"
 RUNTIME_DIR = Path("/tmp/zeplinlab") if os.getenv("VERCEL") else ROOT_DIR
 REPORTS_DIR = RUNTIME_DIR / "storage" / "relatorios"
 CREATIVES_DIR = RUNTIME_DIR / "uploaded_creatives"
+FRONTEND_DIST_DIR = ROOT_DIR / "frontend" / "dist"
+FRONTEND_ASSETS_DIR = FRONTEND_DIST_DIR / "assets"
 logger = logging.getLogger("zeplin.meta")
 
 app = FastAPI(title="Zeplin Lab Digital API", version="1.0.0")
@@ -42,12 +45,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.mount(
+    "/assets",
+    StaticFiles(directory=FRONTEND_ASSETS_DIR, check_dir=False),
+    name="frontend-assets",
+)
 
 
 @app.get("/", include_in_schema=False)
-def redirect_root_to_docs() -> RedirectResponse:
-    """Direciona a raiz da implantação para a documentação interativa."""
-    return RedirectResponse(url="/docs")
+def serve_workspace() -> FileResponse:
+    """Entrega o dashboard React compilado na raiz da aplicação."""
+    index_file = FRONTEND_DIST_DIR / "index.html"
+    if not index_file.is_file():
+        raise HTTPException(status_code=503, detail="Frontend ainda não foi compilado.")
+    return FileResponse(index_file, media_type="text/html")
 
 
 @app.on_event("startup")
