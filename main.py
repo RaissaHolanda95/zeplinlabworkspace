@@ -1,5 +1,6 @@
 """Servidor FastAPI da plataforma Zeplin Lab Digital."""
 
+import asyncio
 import json
 import logging
 import os
@@ -27,8 +28,10 @@ from services.pdf_generator import generate_pdf_report
 
 ROOT_DIR = Path(__file__).resolve().parent
 ENV_FILE = ROOT_DIR / ".env"
-REPORTS_DIR = ROOT_DIR / "storage" / "relatorios"
-CREATIVES_DIR = Path(__file__).resolve().parent / "uploaded_creatives"
+# Em Vercel, somente /tmp é gravável durante a vida da função serverless.
+RUNTIME_DIR = Path("/tmp/zeplinlab") if os.getenv("VERCEL") else ROOT_DIR
+REPORTS_DIR = RUNTIME_DIR / "storage" / "relatorios"
+CREATIVES_DIR = RUNTIME_DIR / "uploaded_creatives"
 logger = logging.getLogger("zeplin.meta")
 
 app = FastAPI(title="Zeplin Lab Digital API", version="1.0.0")
@@ -42,12 +45,24 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def create_tables() -> None:
+async def create_tables() -> None:
+    """Inicializa recursos locais sem bloquear o event loop ASGI."""
     _load_environment()
-    Base.metadata.create_all(bind=engine)
-    _ensure_report_columns()
+    try:
+        await asyncio.to_thread(_initialize_runtime_resources)
+    except Exception:
+        # A aplicação continua disponível mesmo se o armazenamento temporário
+        # estiver indisponível na inicialização. A falha fica registrada e a
+        # próxima requisição poderá tentar usar o banco normalmente.
+        logger.exception("Falha ao inicializar armazenamento local no startup")
+
+
+def _initialize_runtime_resources() -> None:
+    # Crie os diretórios antes de abrir o SQLite ou gerar arquivos de relatório.
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     CREATIVES_DIR.mkdir(parents=True, exist_ok=True)
+    Base.metadata.create_all(bind=engine)
+    _ensure_report_columns()
 
 
 def _ensure_report_columns() -> None:
