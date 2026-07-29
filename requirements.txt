@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+requests
+openai
+jinja2
+xhtml2pdf
+python-multipart
+python-dotenv

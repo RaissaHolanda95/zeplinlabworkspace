@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Desempenho de Tráfego Pago</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 22mm;
+    background-color: #ffffff;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #2d3748;
+    margin: 0;
+    padding: 0;
+    font-size: 10pt;
+    line-height: 1.5;
+  }
+
+  /* Header Container */
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 2px solid #1a202c;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  .header-col-left {
+    vertical-align: middle;
+    width: 35%;
+  }
+
+  .header-col-center {
+    vertical-align: middle;
+    text-align: center;
+    width: 30%;
+  }
+
+  .header-col-right {
+    vertical-align: middle;
+    text-align: right;
+    width: 35%;
+  }
+
+  .brand-title {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #1a202c;
+    letter-spacing: -0.5px;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .brand-subtitle {
+    font-size: 8pt;
+    color: #718096;
+    margin: 2px 0 0 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* SVG / Logo Placeholder Styling */
+  .logo-wrapper {
+    display: inline-block;
+    width: 110px;
+    height: 48px;
+    border: 1.5px dashed #a0aec0;
+    border-radius: 6px;
+    background-color: #f7fafc;
+    text-align: center;
+    vertical-align: middle;
+    padding: 6px 4px;
+  }
+
+  .logo-placeholder-text {
+    font-size: 7.5pt;
+    font-weight: 700;
+    color: #4a5568;
+    margin-top: 2px;
+    line-height: 1.2;
+  }
+
+  .meta-box {
+    display: inline-block;
+    text-align: right;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 4px;
+  }
+
+  .meta-item {
+    font-size: 8pt;
+    color: #4a5568;
+  }
+
+  .meta-item strong {
+    color: #1a202c;
+  }
+
+  /* Report Title Banner */
+  .title-section {
+    margin-bottom: 20px;
+    background-color: #f8fafc;
+    border-left: 4px solid #2b6cb0;
+    padding: 12px 16px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .report-title {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 4px 0;
+  }
+
+  .report-desc {
+    font-size: 9pt;
+    color: #4a5568;
+    margin: 0;
+  }
+
+  /* Section Styles */
+  .section-header {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1a202c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e2e8f0;
+    page-break-after: avoid;
+  }
+
+  /* Executive Text Box */
+  .text-card {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+
+  .text-card p {
+    margin: 0 0 10px 0;
+    font-size: 9.5pt;
+    color: #2d3748;
+    text-align: justify;
+  }
+
+  .text-card p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Key Metrics Grid Table */
+  .metrics-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 8px 0;
+    margin-bottom: 20px;
+    margin-left: -8px;
+    margin-right: -8px;
+  }
+
+  .metric-card {
+    background-color: #edf2f7;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    vertical-align: top;
+  }
+
+  .metric-value {
+    font-size: 13pt;
+    font-weight: 800;
+    color: #2b6cb0;
+    margin-bottom: 2px;
+  }
+
+  .metric-label {
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #4a5568;
+  }
+
+  /* Print Showcase Layout */
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+    page-break-inside: avoid;
+  }
+
+  .print-cell {
+    vertical-align: top;
+    padding: 6px;
+  }
+
+  .print-frame {
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 10px;
+    background-color: #ffffff;
+  }
+
+  .image-placeholder {
+    width: 100%;
+    height: 170px;
+    border: 2px dashed #cbd5e0;
+    border-radius: 4px;
+    background-color: #f7fafc;
+    text-align: center;
+    vertical-align: middle;
+    display: table;
+  }
+
+  .image-placeholder-inner {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+    color: #a0aec0;
+    font-size: 8.5pt;
+  }
+
+  .image-placeholder-inner strong {
+    display: block;
+    color: #4a5568;
+    font-size: 9.5pt;
+    margin-bottom: 4px;
+  }
+
+  .print-details {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #edf2f7;
+  }
+
+  .print-title {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 4px 0;
+  }
+
+  .print-notes {
+    font-size: 8.5pt;
+    color: #4a5568;
+    margin: 0 0 6px 0;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 3px;
+    background-color: #ebf8ff;
+    color: #2b6cb0;
+  }
+
+  .creatives-grid { width: 100%; margin-bottom: 18px; }
+  .creative-content { word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 350px; }
+  .creative-content .print-title, .creative-content .print-notes { word-break: break-word; overflow-wrap: break-word; }
+
+  /* Callout Box */
+  .callout-box {
+    background-color: #f0fff4;
+    border: 1px solid #c6f6d5;
+    border-left: 4px solid #38a169;
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+
+  .callout-title {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #22543d;
+    margin: 0 0 4px 0;
+  }
+
+  .callout-desc {
+    font-size: 8.5pt;
+    color: #2f855a;
+    margin: 0;
+  }
+
+  .pdf-footer {
+    position: fixed;
+    bottom: -14mm;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #e2e8f0;
+    color: #718096;
+    font-size: 8pt;
+    padding-top: 3mm;
+    text-align: center;
+  }
+
+</style>
+</head>
+<body>
+
+  <!-- CABEÇALHO DO RELATÓRIO COM LOGO CENTRALIZADA -->
+  <table class="header-table">
+    <tr>
+      <!-- LADO ESQUERDO: NOME DA MARCA E SUBTÍTULO -->
+      <td class="header-col-left">
+        <h1 class="brand-title">ZEPLIN LAB</h1>
+        <p class="brand-subtitle">Tráfego Pago & Performance</p>
+      </td>
+
+      <!-- CENTRO: LOGOTIPO / IMAGEM DA SUA MARCA -->
+      <td class="header-col-center">
+        <img src="{{ logo_url }}" alt="Logo Zeplin Lab Digital" style="display: inline-block; max-height: 48px; width: auto; vertical-align: middle;">
+      </td>
+
+      <!-- LADO DIREITO: INFORMAÇÕES DO CLIENTE E PERÍODO -->
+      <td class="header-col-right">
+        <div class="meta-box">
+          <div class="meta-item"><strong>Cliente:</strong> {{ report.client_name }}</div>
+          <div class="meta-item"><strong>Período:</strong> {{ report.start_date }} a {{ report.end_date }}</div>
+          <div class="meta-item"><strong>Campanha / Filtro:</strong> {{ report.campaign_name }}</div>
+          <div class="meta-item"><strong>Plataforma:</strong> Meta Ads (IG/FB)</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- TÍTULO DO RELATÓRIO -->
+  <div class="title-section">
+    <div class="report-title">Relatório Mensal de Performance & Análise de Criativos</div>
+    <div class="report-desc">Acompanhamento de conversões, métricas de engajamento e evidências visuais das campanhas ativas.</div>
+  </div>
+
+  <!-- MÉTRICAS CHAVE -->
+  <div class="section-header">1. Resumo de Desempenho</div>
+  <table class="metrics-table">
+    <tr>
+      <td class="metric-card" style="width: 33.33%;">
+        <div class="metric-value">{{ report.metrics.spend | currency }}</div>
+        <div class="metric-label">Investimento Total</div>
+      </td>
+      <td class="metric-card" style="width: 33.33%;">
+        <div class="metric-value">{{ report.metrics.conversions | number }}</div>
+        <div class="metric-label">Resultados (Mensagens)</div>
+      </td>
+      <td class="metric-card" style="width: 33.33%;">
+        <div class="metric-value">{{ report.metrics.cost_per_result | currency }}</div>
+        <div class="metric-label">Custo por Resultado</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="metric-card" style="width: 33.33%;">
+        <div class="metric-value">{{ report.metrics.cost_per_message | currency }}</div>
+        <div class="metric-label">Custo por Mensagem</div>
+      </td>
+      <td class="metric-card" style="width: 33.33%;">
+        <div class="metric-value">{{ report.metrics.impressions | number }}</div>
+        <div class="metric-label">Impressões</div>
+      </td>
+      <td class="metric-card" style="width: 33.33%;">
+        <div class="metric-value">{{ report.metrics.reach | number }}</div>
+        <div class="metric-label">Alcance</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ESPAÇO PARA ANÁLISE ESCRITA (TEXTO DO USUÁRIO) -->
+  <div class="section-header">2. Análise Estratégica & Diagnóstico do Especialista</div>
+  <div class="text-card">
+    {% for paragraph in summary_paragraphs %}
+    <p>{{ paragraph }}</p>
+    {% endfor %}
+  </div>
+
+  <!-- ESPAÇO PARA PRINTS E COMPROVAÇÃO DE ANÚNCIOS -->
+  <div class="section-header">3. Anúncios em Destaque & Prints das Campanhas</div>
+
+  {% if report.creatives %}
+  <div class="creatives-grid">
+    {% for creative in report.creatives %}
+    <table style="width: 100%; margin-bottom: 25px; border: 1px solid #e5e7eb; border-radius: 8px; border-collapse: collapse; page-break-inside: avoid;">
+      <tr>
+        <td style="width: 35%; vertical-align: top; padding: 12px; text-align: center;">
+          {% if creative.image_url %}<img src="{{ creative.image_url }}" alt="{{ creative.title }}" style="max-width: 100%; max-height: 250px; display: block; margin: 0 auto;">{% endif %}
+        </td>
+        <td class="creative-content" style="width: 65%; vertical-align: top; padding: 12px; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 350px;">
+          <div class="print-title">{{ creative.title }}</div>
+          {% if creative.performance %}<p class="print-notes"><strong>Performance:</strong> {{ creative.performance }}</p>{% endif %}
+          {% if creative.observation %}<p class="print-notes"><strong>Observação:</strong> {{ creative.observation }}</p>{% endif %}
+        </td>
+      </tr>
+    </table>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if false %}
+  <table class="print-table">
+    <tr>
+      <!-- ANÚNCIO 1 -->
+      <td class="print-cell" style="width: 50%;">
+        <div class="print-frame">
+          <div class="image-placeholder">
+            <div class="image-placeholder-inner">
+              <strong>[ INSERIR PRINT DO ANÚNCIO 1 ]</strong>
+              Dimensão ideal: 1080x1080 ou 1080x1350<br>(Ex: Screenshot do Gerador de Anúncios / Feed)
+            </div>
+          </div>
+          <div class="print-details">
+            <div class="print-title">Criativo #01 — Carrossel de Benefícios</div>
+            <p class="print-notes">
+              <strong>Performance:</strong> 84 leads gerados | CPL € 2,60.<br>
+              <strong>Observação:</strong> O slide 2 teve a maior taxa de retenção. Recomendado manter na ativa.
+            </p>
+            <span class="tag">Campeão de Conversão</span>
+          </div>
+        </div>
+      </td>
+
+      <!-- ANÚNCIO 2 -->
+      <td class="print-cell" style="width: 50%;">
+        <div class="print-frame">
+          <div class="image-placeholder">
+            <div class="image-placeholder-inner">
+              <strong>[ INSERIR PRINT DO ANÚNCIO 2 ]</strong>
+              Dimensão ideal: 1080x1920<br>(Ex: Screenshot de Stories / Reels)
+            </div>
+          </div>
+          <div class="print-details">
+            <div class="print-title">Criativo #02 — Vídeo Prova Social / Depoimento</div>
+            <p class="print-notes">
+              <strong>Performance:</strong> 58 leads gerados | CPL € 3,45.<br>
+              <strong>Observação:</strong> Excelente volume de respostas diretas no Direct/WhatsApp.
+            </p>
+            <span class="tag">Engajamento Elevado</span>
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- OBSERVAÇÕES E PRÓXIMOS PASSOS (TEXTO ADICIONAL) -->
+  <div class="section-header">4. Plano de Ação para o Próximo Período</div>
+  {% endif %}
+  <div class="callout-box">
+    <div class="callout-title">Recomendações e Próximos Testes:</div>
+    <div class="callout-desc">{{ report.action_plan | replace('\n', '<br>') | safe }}</div>
+  </div>
+  {% if false %}
+    <div class="callout-desc">
+      1. Expandir o orçamento da campanha de conversão em 15% para aproveitar o CPL reduzido.<br>
+      2. Testar novas variações de títulos com foco em urgência e escassez.<br>
+      3. Implementar remarketing específico para usuários que interagiram com os Stories no último mês.
+    </div>
+  </div>
+
+  <div class="pdf-footer">Zeplin Lab Digital • Relatório Estratégico</div>
+
+{% endif %}
+<div class="pdf-footer">Zeplin Lab Digital &bull; Relatório Estratégico</div>
+</body>
+</html>

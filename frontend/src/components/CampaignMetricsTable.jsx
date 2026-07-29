@@ -1,0 +1,9 @@
+const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
+const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
+
+export default function CampaignMetricsTable({ campaigns }) {
+  return <section className="rounded-2xl bg-white p-6 shadow-soft">
+    <div><h2 className="font-semibold">Desempenho por campanha</h2><p className="mt-1 text-sm text-slate-500">Indicadores retornados pela Meta Ads no período sincronizado.</p></div>
+    <div className="mt-5 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b text-xs uppercase tracking-wide text-slate-500"><tr><th className="pb-3 pr-4">Campanha</th><th className="pb-3 pr-4">Valor usado</th><th className="pb-3 pr-4">Resultados</th><th className="pb-3 pr-4">Custo/resultado</th><th className="pb-3 pr-4">Custo/mensagem</th><th className="pb-3 pr-4">Impressões</th><th className="pb-3">Alcance</th></tr></thead><tbody>{campaigns.map((campaign) => <tr key={campaign.meta_campaign_id || campaign.id} className="border-b border-slate-100"><td className="py-3 pr-4 font-medium">{campaign.name}</td><td className="py-3 pr-4">{currency.format(Number(campaign.spend) || 0)}</td><td className="py-3 pr-4">{number.format(Number(campaign.conversions) || 0)}</td><td className="py-3 pr-4">{currency.format(Number(campaign.cost_per_result) || 0)}</td><td className="py-3 pr-4">{currency.format(Number(campaign.cost_per_message) || 0)}</td><td className="py-3 pr-4">{number.format(Number(campaign.impressions) || 0)}</td><td className="py-3">{number.format(Number(campaign.reach) || 0)}</td></tr>)}{campaigns.length === 0 && <tr><td className="py-5 text-slate-500" colSpan="7">Sincronize os dados para exibir o desempenho por campanha.</td></tr>}</tbody></table></div>
+  </section>
+}
